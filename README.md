@@ -1,6 +1,6 @@
 # GitHub Projects Mobile
 
-GitHub Projects（new / Projects v2）を TODOアプリ感覚で使えるモバイルアプリです。
+GitHub Projects（new / Projects v2）を TODOアプリ感覚で扱うFlutterモバイルアプリです。
 カンバン操作・期限管理・リマインドに特化し、  「モバイルだとGitHub Projectsが使いづらい」という課題を解決します。
 
 ## ✨ Features
@@ -48,6 +48,60 @@ Planned MVP features:
 - Personal use (single user)
 - Not intended to replace full project management tools
 
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Flutter SDK (stable channel)
+- Dart SDK (>=3.0.0)
+- iOS development: Xcode
+- Android development: Android Studio
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/sekinet813/github-projects-mobile-app.git
+cd github-projects-mobile-app
+```
+
+2. Install dependencies:
+```bash
+flutter pub get
+```
+
+3. Set up environment variables:
+   
+   プロジェクトルートに `.env` ファイルを作成し、以下の内容を追加してください：
+   ```env
+   # GitHub OAuth Configuration
+   GITHUB_CLIENT_ID=your_github_client_id_here
+   GITHUB_REDIRECT_URL=your_redirect_url_here
+   
+   # GitHub API
+   GITHUB_API_BASE_URL=https://api.github.com/graphql
+   ```
+   
+   **注意**: `.env` ファイルは `.gitignore` に含まれているため、Gitにはコミットされません。
+
+4. Run the app:
+```bash
+flutter run
+```
+
+## 📁 Project Structure
+
+```
+lib/
+├── config/          # アプリ設定（ルーティング、環境変数など）
+├── screens/         # 画面（Splash, Login, Home）
+├── widgets/         # 再利用可能なウィジェット
+├── services/        # APIサービス層
+├── repositories/    # データリポジトリ層
+├── models/          # データモデル
+├── providers/       # Riverpodプロバイダー
+└── theme/           # テーマ定義
+```
 
 ## 📄 License
 
