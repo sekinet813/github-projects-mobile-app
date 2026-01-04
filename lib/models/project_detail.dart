@@ -102,6 +102,26 @@ class ProjectDetail {
       return null;
     }
   }
+
+  /// Status別にitemsを分類する
+  ///
+  /// 戻り値: Status名をキー、そのStatusに属するitemsのリストを値とするMap
+  /// Statusが未設定のitemsは"No Status"として分類される
+  Map<String, List<ProjectItem>> groupItemsByStatus() {
+    final groupedItems = <String, List<ProjectItem>>{};
+
+    for (final item in items) {
+      final statusValue = item.getStatusValue();
+      final statusKey = statusValue ?? 'No Status';
+
+      if (!groupedItems.containsKey(statusKey)) {
+        groupedItems[statusKey] = <ProjectItem>[];
+      }
+      groupedItems[statusKey]!.add(item);
+    }
+
+    return groupedItems;
+  }
 }
 
 /// プロジェクトのフィールド
