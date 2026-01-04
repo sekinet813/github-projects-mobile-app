@@ -290,9 +290,12 @@ class ProjectItem {
   /// Statusフィールドの値を取得
   String? getStatusValue() {
     for (final fieldValue in fieldValues) {
-      if (fieldValue.field?.name.toLowerCase() == 'status' ||
-          fieldValue.field?.name.toLowerCase() == 'ステータス') {
-        return fieldValue.value;
+      final field = fieldValue.field;
+      if (field != null) {
+        final fieldName = field.name.toLowerCase();
+        if (fieldName == 'status' || fieldName == 'ステータス') {
+          return fieldValue.value;
+        }
       }
     }
     return null;
@@ -301,9 +304,12 @@ class ProjectItem {
   /// Dateフィールドの値を取得
   String? getDateValue() {
     for (final fieldValue in fieldValues) {
-      if (fieldValue.field?.name.toLowerCase() == 'date' ||
-          fieldValue.field?.name.toLowerCase() == '日付') {
-        return fieldValue.value;
+      final field = fieldValue.field;
+      if (field != null) {
+        final fieldName = field.name.toLowerCase();
+        if (fieldName == 'date' || fieldName == '日付') {
+          return fieldValue.value;
+        }
       }
     }
     return null;
