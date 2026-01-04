@@ -1,5 +1,6 @@
 import '../services/github_api_service.dart';
 import '../models/project.dart';
+import '../models/project_detail.dart';
 import '../exceptions/github_api_exception.dart';
 import 'github_auth_repository.dart';
 import 'github_oauth_repository.dart';
@@ -227,13 +228,75 @@ class GitHubRepository {
   ///
   /// [projectId] プロジェクトID
   ///
-  /// 戻り値: プロジェクトの詳細情報（現在はダミー）
-  Future<Map<String, dynamic>> getProjectDetails(String projectId) async {
+  /// 戻り値: プロジェクトの詳細情報
+  Future<ProjectDetail> getProjectDetails(String projectId) async {
     try {
-      // TODO: 実際の実装を追加
-      await Future.delayed(const Duration(milliseconds: 500));
-      return {};
+      final response = await _apiService.getProjectDetail(projectId: projectId);
+
+      // GraphQLエラーのチェック
+      if (response.containsKey('errors')) {
+        final errors = response['errors'] as List<dynamic>;
+        final errorMessages = errors.map((e) {
+          if (e is Map<String, dynamic>) {
+            return e['message'] as String? ?? e.toString();
+          }
+          return e.toString();
+        }).toList();
+
+        final errorMessage = errorMessages.join(', ');
+
+        // "Resource not accessible by integration" エラーを検出
+        if (errorMessage.contains('Resource not accessible by integration') ||
+            errorMessage.contains('not accessible by integration')) {
+          throw ReauthRequiredException('プロジェクト詳細にアクセスできません。\n\n'
+              '【原因】\n'
+              'OAuth App のスコープが不足しているか、プロジェクトにアクセスする権限がありません。\n\n'
+              '【解決方法】\n'
+              '1. アプリでログアウトして再ログイン（read:user, read:project スコープで認証）\n'
+              '2. Organization のプロジェクトの場合、Organization の設定で OAuth App を承認\n\n'
+              'エラー詳細: $errorMessage');
+        }
+
+        // スコープ不足のエラーを検出
+        if (errorMessage.contains('permission') ||
+            errorMessage.contains('scope') ||
+            errorMessage.contains('authorization')) {
+          throw ReauthRequiredException('アクセス権限が不足しています。\n\n'
+              '【必要なスコープ】\n'
+              '- read:user（ユーザー情報の読み取り）\n'
+              '- read:project（ProjectV2 の読み取り）\n'
+              '- read:org（Organization のプロジェクトにアクセスする場合）\n\n'
+              '【解決方法】\n'
+              '1. アプリでログアウト\n'
+              '2. 再度ログイン（新しいスコープで認証）\n\n'
+              'エラー詳細: $errorMessage');
+        }
+
+        throw Exception('GraphQLエラー: $errorMessage');
+      }
+
+      // レスポンスのパース
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw Exception('レスポンスにdataが含まれていません');
+      }
+
+      final node = data['node'] as Map<String, dynamic>?;
+      if (node == null) {
+        throw Exception('プロジェクトが見つかりません');
+      }
+
+      // ProjectDetail を作成
+      return ProjectDetail.fromJson(node);
+    } on ReauthRequiredException {
+      rethrow;
+    } on FormatException catch (e) {
+      throw Exception('プロジェクト詳細のパースに失敗しました: ${e.message}');
     } catch (e) {
+      // 既にExceptionの場合はそのまま再スロー
+      if (e is Exception) {
+        rethrow;
+      }
       throw Exception('プロジェクト詳細の取得に失敗しました: $e');
     }
   }
