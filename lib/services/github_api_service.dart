@@ -1,61 +1,42 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../config/app_config.dart';
+import 'github_graphql_client.dart';
+import '../repositories/github_auth_repository.dart';
 
 /// GitHub GraphQL API を扱うサービスクラス
+///
+/// 後方互換性のため、既存のメソッドを提供。
+/// 内部では GitHubGraphQLClient を使用。
 class GitHubApiService {
-  final String baseUrl = AppConfig.githubApiBaseUrl;
-  
+  final GitHubGraphQLClient _graphQLClient;
+
+  GitHubApiService({GitHubAuthRepository? authRepository})
+      : _graphQLClient = GitHubGraphQLClient(authRepository: authRepository);
+
   /// GraphQLクエリを実行
-  /// 
+  ///
   /// [query] GraphQLクエリ文字列
   /// [variables] クエリ変数（オプション）
-  /// 
+  ///
   /// 戻り値: APIレスポンスのJSONマップ
   Future<Map<String, dynamic>> executeQuery(
     String query, {
     Map<String, dynamic>? variables,
   }) async {
-    final token = await AppConfig.getAccessToken();
-    
-    if (token == null || token.isEmpty) {
-      throw Exception('アクセストークンが設定されていません');
-    }
-    
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'query': query,
-        if (variables != null) 'variables': variables,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception(
-        'APIリクエストが失敗しました: ${response.statusCode} - ${response.body}',
-      );
-    }
+    return _graphQLClient.query(query: query, variables: variables);
   }
-  
+
   /// GraphQLミューテーションを実行
-  /// 
+  ///
   /// [mutation] GraphQLミューテーション文字列
   /// [variables] ミューテーション変数（オプション）
-  /// 
+  ///
   /// 戻り値: APIレスポンスのJSONマップ
   Future<Map<String, dynamic>> executeMutation(
     String mutation, {
     Map<String, dynamic>? variables,
   }) async {
-    return executeQuery(mutation, variables: variables);
+    return _graphQLClient.mutation(mutation: mutation, variables: variables);
   }
-  
+
   /// ダミーデータを返す（開発用）
   /// 実際の実装は次フェーズで行う
   Future<Map<String, dynamic>> getProjects() async {
@@ -72,5 +53,3 @@ class GitHubApiService {
     };
   }
 }
-
-
