@@ -51,4 +51,5 @@ config.local.dart
 
 # Generated files
 *.g.dart
+!lib/config/app_config.g.dart
 *.freezed.dart
