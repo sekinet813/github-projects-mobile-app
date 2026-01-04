@@ -18,13 +18,13 @@ app.use(express.json());
 // GitHub App設定
 // 環境変数から読み取る
 // GITHUB_APP_ID: GitHub App ID（整数）
-// GITHUB_PRIVATE_KEY_PATH: 秘密鍵ファイルのパス（オプション、PRIVATE_KEYが設定されている場合は不要）
-// GITHUB_PRIVATE_KEY: 秘密鍵の生の値（CI/コンテナ環境用、PRIVATE_KEY_PATHの代替）
+// GITHUB_APP_PRIVATE_KEY_PATH: 秘密鍵ファイルのパス（オプション、PRIVATE_KEYが設定されている場合は不要）
+// GITHUB_APP_PRIVATE_KEY: 秘密鍵の生の値（CI/コンテナ環境用、PRIVATE_KEY_PATHの代替）
 
 // 環境変数の検証
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID;
-const GITHUB_PRIVATE_KEY_PATH = process.env.GITHUB_PRIVATE_KEY_PATH;
-const GITHUB_PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY;
+const GITHUB_APP_PRIVATE_KEY_PATH = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
+const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY;
 
 if (!GITHUB_APP_ID || GITHUB_APP_ID.trim() === '') {
   console.error('❌ 環境変数 GITHUB_APP_ID が設定されていません');
@@ -40,12 +40,12 @@ if (isNaN(APP_ID)) {
   process.exit(1);
 }
 
-if (!GITHUB_PRIVATE_KEY && (!GITHUB_PRIVATE_KEY_PATH || GITHUB_PRIVATE_KEY_PATH.trim() === '')) {
-  console.error('❌ 環境変数 GITHUB_PRIVATE_KEY または GITHUB_PRIVATE_KEY_PATH のいずれかが設定されていません');
+if (!GITHUB_APP_PRIVATE_KEY && (!GITHUB_APP_PRIVATE_KEY_PATH || GITHUB_APP_PRIVATE_KEY_PATH.trim() === '')) {
+  console.error('❌ 環境変数 GITHUB_APP_PRIVATE_KEY または GITHUB_APP_PRIVATE_KEY_PATH のいずれかが設定されていません');
   console.error('   起動前に以下のいずれかを設定してください:');
-  console.error('   - GITHUB_PRIVATE_KEY: 秘密鍵の生の値（CI/コンテナ環境推奨）');
-  console.error('   - GITHUB_PRIVATE_KEY_PATH: 秘密鍵ファイルのパス');
-  console.error('   例: export GITHUB_PRIVATE_KEY_PATH=./mobile-github-projects.2026-01-03.private-key.pem');
+  console.error('   - GITHUB_APP_PRIVATE_KEY: 秘密鍵の生の値（CI/コンテナ環境推奨）');
+  console.error('   - GITHUB_APP_PRIVATE_KEY_PATH: 秘密鍵ファイルのパス');
+  console.error('   例: export GITHUB_APP_PRIVATE_KEY_PATH=./mobile-github-projects.2026-01-03.private-key.pem');
   process.exit(1);
 }
 
@@ -61,18 +61,18 @@ if (!GITHUB_OAUTH_CLIENT_ID || !GITHUB_OAUTH_CLIENT_SECRET) {
 }
 
 let PRIVATE_KEY;
-if (GITHUB_PRIVATE_KEY) {
+if (GITHUB_APP_PRIVATE_KEY) {
   // 環境変数から直接読み取る（CI/コンテナ環境用）
-  PRIVATE_KEY = GITHUB_PRIVATE_KEY;
+  PRIVATE_KEY = GITHUB_APP_PRIVATE_KEY;
   // 改行文字がエスケープされている場合に対応
   PRIVATE_KEY = PRIVATE_KEY.replace(/\\n/g, '\n');
 } else {
   // ファイルパスから読み取る
   try {
-    PRIVATE_KEY = fs.readFileSync(GITHUB_PRIVATE_KEY_PATH, 'utf8');
+    PRIVATE_KEY = fs.readFileSync(GITHUB_APP_PRIVATE_KEY_PATH, 'utf8');
   } catch (error) {
     console.error('❌ 秘密鍵ファイルの読み込みに失敗しました:', error.message);
-    console.error(`   ファイルパス: ${GITHUB_PRIVATE_KEY_PATH}`);
+    console.error(`   ファイルパス: ${GITHUB_APP_PRIVATE_KEY_PATH}`);
     process.exit(1);
   }
 }
