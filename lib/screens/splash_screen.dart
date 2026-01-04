@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../config/app_config.dart';
+import '../providers/app_providers.dart';
 
 /// スプラッシュ画面
 class SplashScreen extends ConsumerStatefulWidget {
@@ -22,16 +23,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // スプラッシュ表示のための待機時間
     await Future.delayed(const Duration(seconds: 2));
     
-    // アクセストークンの確認
-    final token = await AppConfig.getAccessToken();
+    // OAuth token を優先的に確認
+    final oauthToken = await AppConfig.getOAuthAccessToken();
+    
+    // OAuth token がない場合、Installation Access Token を確認（後方互換性）
+    final installationToken = oauthToken == null 
+        ? await AppConfig.getAccessToken() 
+        : null;
     
     if (!mounted) return;
     
-    if (token != null && token.isNotEmpty) {
+    if ((oauthToken != null && oauthToken.isNotEmpty) ||
+        (installationToken != null && installationToken.isNotEmpty)) {
       // トークンがある場合はホーム画面へ
+      // プロジェクトプロバイダーを無効化して、新しいデータを取得するようにする
+      ref.invalidate(projectsProvider);
+      ref.invalidate(authStateProvider);
+      
+      if (!mounted) return;
       context.go('/home');
     } else {
       // トークンがない場合はログイン画面へ
+      if (!mounted) return;
       context.go('/login');
     }
   }

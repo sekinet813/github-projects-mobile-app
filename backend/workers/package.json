@@ -1,0 +1,28 @@
+{
+  "name": "github-app-backend-workers",
+  "version": "1.0.0",
+  "description": "GitHub App認証用Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^3.2.0",
+    "@octokit/auth-app": "^4.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  },
+  "keywords": [
+    "github",
+    "app",
+    "jwt",
+    "authentication",
+    "cloudflare-workers"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

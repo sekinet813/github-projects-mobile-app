@@ -1,24 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/github_repository.dart';
 import '../repositories/github_auth_repository.dart';
+import '../repositories/github_oauth_repository.dart';
 import '../services/github_api_service.dart';
 import '../services/github_graphql_client.dart';
-import '../services/github_oauth_service.dart';
+import '../services/github_app_service.dart';
+import '../models/project.dart';
+
+/// GitHub App サービスのプロバイダー
+final githubAppServiceProvider = Provider<GitHubAppService>((ref) {
+  return GitHubAppService();
+});
+
+/// GitHub OAuth リポジトリのプロバイダー
+final githubOAuthRepositoryProvider = Provider<GitHubOAuthRepository>((ref) {
+  return GitHubOAuthRepository();
+});
 
 /// GitHub 認証リポジトリのプロバイダー
 final githubAuthRepositoryProvider = Provider<GitHubAuthRepository>((ref) {
-  return GitHubAuthRepository();
+  final appService = ref.watch(githubAppServiceProvider);
+  return GitHubAuthRepository(appService: appService);
 });
 
 /// GitHub GraphQL クライアントのプロバイダー
 final githubGraphQLClientProvider = Provider<GitHubGraphQLClient>((ref) {
   final authRepository = ref.watch(githubAuthRepositoryProvider);
   return GitHubGraphQLClient(authRepository: authRepository);
-});
-
-/// GitHub OAuth サービスのプロバイダー
-final githubOAuthServiceProvider = Provider<GitHubOAuthService>((ref) {
-  return GitHubOAuthService();
 });
 
 /// GitHub API サービスのプロバイダー
@@ -37,4 +45,11 @@ final githubRepositoryProvider = Provider<GitHubRepository>((ref) {
 final authStateProvider = FutureProvider<bool>((ref) async {
   final authRepository = ref.watch(githubAuthRepositoryProvider);
   return await authRepository.hasAccessToken();
+});
+
+/// プロジェクト一覧を管理するプロバイダー
+/// Loading / Success / Error の状態を自動的に管理
+final projectsProvider = FutureProvider<List<Project>>((ref) async {
+  final repository = ref.watch(githubRepositoryProvider);
+  return await repository.getProjects();
 });

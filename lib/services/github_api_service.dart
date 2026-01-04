@@ -37,19 +37,211 @@ class GitHubApiService {
     return _graphQLClient.mutation(mutation: mutation, variables: variables);
   }
 
-  /// ダミーデータを返す（開発用）
-  /// 実際の実装は次フェーズで行う
-  Future<Map<String, dynamic>> getProjects() async {
-    // TODO: 実際のGraphQLクエリを実装
-    await Future.delayed(const Duration(milliseconds: 500));
-    return {
-      'data': {
-        'viewer': {
-          'projectsV2': {
-            'nodes': [],
-          },
-        },
-      },
-    };
+  /// Organization の ProjectV2 一覧を取得
+  ///
+  /// [orgLogin] Organization のログイン名
+  ///
+  /// 戻り値: APIレスポンスのJSONマップ
+  Future<Map<String, dynamic>> getOrganizationProjects({
+    required String orgLogin,
+  }) async {
+    const query = '''
+      query OrganizationProjects(\$login: String!) {
+        organization(login: \$login) {
+          login
+          id
+          projectsV2(first: 20) {
+            totalCount
+            nodes {
+              id
+              title
+              shortDescription
+              number
+              public
+              closed
+              owner {
+                __typename
+                ... on Organization {
+                  id
+                  login
+                }
+              }
+            }
+          }
+        }
+      }
+    ''';
+
+    return await _graphQLClient.query(
+      query: query,
+      variables: {'login': orgLogin},
+    );
+  }
+
+  /// ユーザーが所属する Organization の一覧を取得
+  ///
+  /// 戻り値: APIレスポンスのJSONマップ
+  Future<Map<String, dynamic>> getOrganizations() async {
+    const query = '''
+      query ViewerOrganizations {
+        viewer {
+          organizations(first: 20) {
+            totalCount
+            nodes {
+              id
+              login
+              name
+            }
+          }
+        }
+      }
+    ''';
+
+    return await _graphQLClient.query(query: query);
+  }
+
+  /// 個人と Organization のプロジェクトを統合して取得
+  ///
+  /// 戻り値: APIレスポンスのJSONマップ（個人 + Organization のプロジェクト）
+  Future<Map<String, dynamic>> getAllProjects() async {
+    const query = '''
+      query AllProjects {
+        viewer {
+          login
+          id
+          projectsV2(first: 20) {
+            totalCount
+            nodes {
+              id
+              title
+              shortDescription
+              number
+              public
+              closed
+              owner {
+                __typename
+                ... on User {
+                  id
+                  login
+                }
+                ... on Organization {
+                  id
+                  login
+                }
+              }
+            }
+          }
+          organizations(first: 20) {
+            nodes {
+              login
+              id
+              projectsV2(first: 20) {
+                totalCount
+                nodes {
+                  id
+                  title
+                  shortDescription
+                  number
+                  public
+                  closed
+                  owner {
+                    __typename
+                    ... on Organization {
+                      id
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ''';
+
+    return await _graphQLClient.query(query: query);
+  }
+
+  /// GitHub Projects (Projects v2) 一覧を取得
+  ///
+  /// Installation Access Tokenを使用する場合、viewerはbotアカウントを指すため、
+  /// インストールされたアカウント（User/Organization）のプロジェクトを直接クエリする必要がある
+  ///
+  /// 戻り値: APIレスポンスのJSONマップ
+  Future<Map<String, dynamic>> getProjects({String? userLogin}) async {
+    // userLoginが指定されている場合、そのユーザーのプロジェクトを取得
+    // 指定されていない場合、viewerのプロジェクトを取得（OAuthトークンの場合）
+    if (userLogin != null && userLogin.isNotEmpty) {
+      // ユーザーアカウントのプロジェクトを直接クエリ
+      // デバッグ用に、ユーザー情報も取得
+      const query = '''
+        query UserProjects(\$login: String!) {
+          user(login: \$login) {
+            login
+            id
+            projectsV2(first: 20) {
+              totalCount
+              nodes {
+                id
+                title
+                shortDescription
+                number
+                public
+                closed
+                owner {
+                  __typename
+                  ... on User {
+                    id
+                    login
+                  }
+                  ... on Organization {
+                    id
+                    login
+                  }
+                }
+              }
+            }
+          }
+        }
+      ''';
+
+      return await _graphQLClient.query(
+        query: query,
+        variables: {'login': userLogin},
+      );
+    } else {
+      // viewerのプロジェクトを取得（OAuthトークンの場合）
+      const query = '''
+        query ViewerProjects {
+          viewer {
+            login
+            projectsV2(first: 20) {
+              totalCount
+              nodes {
+                id
+                title
+                shortDescription
+                number
+                public
+                closed
+                owner {
+                  __typename
+                  ... on User {
+                    id
+                    login
+                  }
+                  ... on Organization {
+                    id
+                    login
+                  }
+                }
+              }
+            }
+          }
+        }
+      ''';
+
+      return await _graphQLClient.query(query: query);
+    }
   }
 }

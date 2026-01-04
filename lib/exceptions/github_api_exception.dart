@@ -44,3 +44,13 @@ class GitHubApiException implements Exception {
   @override
   String toString() => message;
 }
+
+/// 再認証が必要な場合にスローされる例外
+class ReauthRequiredException implements Exception {
+  final String message;
+
+  const ReauthRequiredException(this.message);
+
+  @override
+  String toString() => message;
+}
