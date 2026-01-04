@@ -1,0 +1,16 @@
+# 開発環境用の環境変数
+# このファイルをコピーして .dev.vars を作成し、実際の値を設定してください
+# 
+# 注意: .dev.vars ファイルは .gitignore に含まれており、Gitにはコミットされません
+
+# GitHub App ID
+GITHUB_APP_ID=your_app_id_here
+
+# GitHub Appの秘密鍵（PEM形式、改行を含む）
+# 秘密鍵ファイルの内容をそのまま貼り付けてください
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA...
+（秘密鍵の内容）
+...
+-----END RSA PRIVATE KEY-----"
+

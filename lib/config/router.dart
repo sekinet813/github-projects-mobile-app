@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/splash_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/installation_setup_screen.dart';
 
 /// アプリケーションのルーティング設定
 class AppRouter {
@@ -43,6 +44,11 @@ class AppRouter {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/installation-setup',
+        name: 'installation-setup',
+        builder: (context, state) => const InstallationSetupScreen(),
       ),
     ],
   );

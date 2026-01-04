@@ -2,17 +2,44 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../repositories/github_auth_repository.dart';
+import '../repositories/github_oauth_repository.dart';
 import '../exceptions/github_api_exception.dart';
 
 /// GitHub GraphQL API v4 クライアント
 ///
 /// GraphQL query / mutation を実行するための共通クライアントレイヤー
+/// OAuth token を優先的に使用し、なければ Installation Access Token を使用
 class GitHubGraphQLClient {
   final String baseUrl = AppConfig.githubApiBaseUrl;
-  final GitHubAuthRepository _authRepository;
+  final GitHubAuthRepository? _authRepository;
+  final GitHubOAuthRepository? _oauthRepository;
 
-  GitHubGraphQLClient({GitHubAuthRepository? authRepository})
-      : _authRepository = authRepository ?? GitHubAuthRepository();
+  GitHubGraphQLClient({
+    GitHubAuthRepository? authRepository,
+    GitHubOAuthRepository? oauthRepository,
+  })  : _authRepository = authRepository,
+        _oauthRepository = oauthRepository ?? GitHubOAuthRepository();
+
+  /// Access token を取得（OAuth token を優先）
+  Future<String?> _getAccessToken() async {
+    // 1. OAuth token を優先的に取得
+    if (_oauthRepository != null) {
+      final oauthToken = await _oauthRepository!.getAccessToken();
+      if (oauthToken != null && oauthToken.isNotEmpty) {
+        return oauthToken;
+      }
+    }
+
+    // 2. OAuth token がない場合、Installation Access Token を使用（後方互換性）
+    if (_authRepository != null) {
+      final installationToken = await _authRepository!.getAccessToken();
+      if (installationToken != null && installationToken.isNotEmpty) {
+        return installationToken;
+      }
+    }
+
+    return null;
+  }
 
   /// GraphQL query / mutation を実行
   ///
@@ -26,10 +53,12 @@ class GitHubGraphQLClient {
     required String document,
     Map<String, dynamic>? variables,
   }) async {
-    // アクセストークンを取得
-    final token = await _authRepository.getAccessToken();
+    // Access token を取得（OAuth token を優先）
+    final token = await _getAccessToken();
     if (token == null || token.isEmpty) {
-      throw GitHubApiException.tokenNotFound();
+      throw ReauthRequiredException(
+        GitHubApiException.tokenNotFound().message,
+      );
     }
 
     try {

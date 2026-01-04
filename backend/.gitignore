@@ -1,0 +1,8 @@
+node_modules/
+.env
+private-key.pem
+*.pem
+.DS_Store
+npm-debug.log
+yarn-error.log
+
