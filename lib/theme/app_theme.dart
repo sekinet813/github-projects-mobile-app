@@ -9,22 +9,21 @@ class AppTheme {
   static const Color surfaceColor = Color(0xFFF6F8FA);
   static const Color errorColor = Color(0xFFD73A49);
   static const Color successColor = Color(0xFF28A745);
-  
+
   // Dark theme colors
   static const Color darkBackgroundColor = Color(0xFF0D1117);
   static const Color darkSurfaceColor = Color(0xFF161B22);
-  
+
   // Typography
   static const String fontFamily = 'SF Pro Display';
-  
+
   /// ライトテーマ
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: primaryColor,
         secondary: secondaryColor,
-        background: backgroundColor,
         surface: surfaceColor,
         error: errorColor,
       ),
@@ -108,15 +107,14 @@ class AppTheme {
       ),
     );
   }
-  
+
   /// ダークテーマ
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: Colors.white,
         secondary: secondaryColor,
-        background: darkBackgroundColor,
         surface: darkSurfaceColor,
         error: errorColor,
       ),
@@ -201,4 +199,3 @@ class AppTheme {
     );
   }
 }
-
