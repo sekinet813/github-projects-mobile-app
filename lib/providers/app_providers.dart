@@ -73,3 +73,17 @@ final projectDetailProvider = FutureProvider.family<ProjectDetail, String>(
     return await repository.getProjectDetails(projectId);
   },
 );
+
+/// Status別に分類されたプロジェクトアイテムを管理するプロバイダー
+/// Loading / Success / Error の状態を自動的に管理
+///
+/// [projectId] プロジェクトID
+/// 戻り値: Status名をキー、そのStatusに属するitemsのリストを値とするMap
+final projectItemsGroupedByStatusProvider =
+    FutureProvider.family<Map<String, List<ProjectItem>>, String>(
+  (ref, projectId) async {
+    final projectDetail =
+        await ref.watch(projectDetailProvider(projectId).future);
+    return projectDetail.groupItemsByStatus();
+  },
+);
