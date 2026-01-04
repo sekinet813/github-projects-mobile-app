@@ -250,4 +250,80 @@ class GitHubApiService {
       return await _graphQLClient.query(query: query);
     }
   }
+
+  /// Project の詳細情報（fields / items）を取得
+  ///
+  /// [projectId] プロジェクトID
+  ///
+  /// 戻り値: APIレスポンスのJSONマップ
+  Future<Map<String, dynamic>> getProjectDetail({
+    required String projectId,
+  }) async {
+    const query = '''
+      query ProjectDetail(\$projectId: ID!) {
+        node(id: \$projectId) {
+          ... on ProjectV2 {
+            id
+            fields(first: 20) {
+              nodes {
+                id
+                name
+                dataType
+                ... on ProjectV2SingleSelectField {
+                  options {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+            items(first: 50) {
+              nodes {
+                id
+                fieldValues(first: 20) {
+                  nodes {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      field {
+                        ... on ProjectV2Field {
+                          id
+                          name
+                          dataType
+                        }
+                      }
+                      name
+                    }
+                    ... on ProjectV2ItemFieldDateValue {
+                      date
+                      field {
+                        ... on ProjectV2Field {
+                          id
+                          name
+                          dataType
+                        }
+                      }
+                    }
+                  }
+                }
+                content {
+                  ... on Issue {
+                    title
+                    number
+                    state
+                  }
+                  ... on DraftIssue {
+                    title
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ''';
+
+    return await _graphQLClient.query(
+      query: query,
+      variables: {'projectId': projectId},
+    );
+  }
 }

@@ -6,6 +6,7 @@ import '../services/github_api_service.dart';
 import '../services/github_graphql_client.dart';
 import '../services/github_app_service.dart';
 import '../models/project.dart';
+import '../models/project_detail.dart';
 
 /// GitHub App サービスのプロバイダー
 final githubAppServiceProvider = Provider<GitHubAppService>((ref) {
@@ -61,3 +62,14 @@ final projectsProvider = FutureProvider<List<Project>>((ref) async {
   final repository = ref.watch(githubRepositoryProvider);
   return await repository.getProjects();
 });
+
+/// プロジェクト詳細を管理するプロバイダー
+/// Loading / Success / Error の状態を自動的に管理
+///
+/// [projectId] プロジェクトID
+final projectDetailProvider = FutureProvider.family<ProjectDetail, String>(
+  (ref, projectId) async {
+    final repository = ref.watch(githubRepositoryProvider);
+    return await repository.getProjectDetails(projectId);
+  },
+);
