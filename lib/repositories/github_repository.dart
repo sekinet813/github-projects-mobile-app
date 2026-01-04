@@ -17,6 +17,7 @@ class GitHubRepository {
   Future<List<Project>> getProjects() async {
     try {
       // OAuth token が存在するかどうかを確認
+      // 注意: プロバイダーから取得するべきだが、後方互換性のため直接インスタンス化
       final oauthRepository = GitHubOAuthRepository();
       final hasOAuthToken = await oauthRepository.hasAccessToken();
 
@@ -33,7 +34,8 @@ class GitHubRepository {
           final authRepository = GitHubAuthRepository();
           final installations = await authRepository.getInstallations();
           if (installations.isNotEmpty) {
-            final account = installations[0]['account'] as Map<String, dynamic>?;
+            final account =
+                installations[0]['account'] as Map<String, dynamic>?;
             userLogin = account?['login'] as String?;
           }
         } catch (e) {

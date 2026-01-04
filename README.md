@@ -97,6 +97,16 @@ cd ..
    # バックエンドの /api/github/installations エンドポイントで取得可能
    # または、GitHub Appのインストール時に取得
    GITHUB_INSTALLATION_ID=your_installation_id_here
+   
+   # GitHub OAuth App Client ID
+   # GitHub Developer Settings で OAuth App を作成して取得
+   # https://github.com/settings/developers
+   GITHUB_OAUTH_CLIENT_ID=your_client_id_here
+   
+   # GitHub OAuth App Client Secret
+   # GitHub Developer Settings で OAuth App を作成して取得
+   # https://github.com/settings/developers
+   GITHUB_OAUTH_CLIENT_SECRET=your_client_secret_here
    ```
    
    **注意**: `.env` ファイルは `.gitignore` に含まれているため、リポジトリにコミットされません。

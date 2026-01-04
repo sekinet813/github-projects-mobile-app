@@ -26,13 +26,21 @@ final githubAuthRepositoryProvider = Provider<GitHubAuthRepository>((ref) {
 /// GitHub GraphQL クライアントのプロバイダー
 final githubGraphQLClientProvider = Provider<GitHubGraphQLClient>((ref) {
   final authRepository = ref.watch(githubAuthRepositoryProvider);
-  return GitHubGraphQLClient(authRepository: authRepository);
+  final oauthRepository = ref.watch(githubOAuthRepositoryProvider);
+  return GitHubGraphQLClient(
+    authRepository: authRepository,
+    oauthRepository: oauthRepository,
+  );
 });
 
 /// GitHub API サービスのプロバイダー
 final githubApiServiceProvider = Provider<GitHubApiService>((ref) {
   final authRepository = ref.watch(githubAuthRepositoryProvider);
-  return GitHubApiService(authRepository: authRepository);
+  final oauthRepository = ref.watch(githubOAuthRepositoryProvider);
+  return GitHubApiService(
+    authRepository: authRepository,
+    oauthRepository: oauthRepository,
+  );
 });
 
 /// GitHub リポジトリのプロバイダー

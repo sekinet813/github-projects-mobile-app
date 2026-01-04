@@ -1,5 +1,6 @@
 import 'github_graphql_client.dart';
 import '../repositories/github_auth_repository.dart';
+import '../repositories/github_oauth_repository.dart';
 
 /// GitHub GraphQL API を扱うサービスクラス
 ///
@@ -8,8 +9,13 @@ import '../repositories/github_auth_repository.dart';
 class GitHubApiService {
   final GitHubGraphQLClient _graphQLClient;
 
-  GitHubApiService({GitHubAuthRepository? authRepository})
-      : _graphQLClient = GitHubGraphQLClient(authRepository: authRepository);
+  GitHubApiService({
+    GitHubAuthRepository? authRepository,
+    GitHubOAuthRepository? oauthRepository,
+  }) : _graphQLClient = GitHubGraphQLClient(
+          authRepository: authRepository,
+          oauthRepository: oauthRepository,
+        );
 
   /// GraphQLクエリを実行
   ///

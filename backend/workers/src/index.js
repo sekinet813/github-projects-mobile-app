@@ -252,9 +252,21 @@ function maskSensitiveData(data) {
 }
 
 /**
- * OAuth authorization code を access token に交換
+ * OAuth authorization code を access token に交換（PKCE対応）
  */
-async function exchangeCodeForToken(code, clientId, clientSecret, redirectUri) {
+async function exchangeCodeForToken(code, clientId, clientSecret, redirectUri, codeVerifier = null) {
+  const body = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    code: code,
+    redirect_uri: redirectUri,
+  };
+  
+  // PKCE code_verifier が提供されている場合は追加
+  if (codeVerifier) {
+    body.code_verifier = codeVerifier;
+  }
+  
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
@@ -262,12 +274,7 @@ async function exchangeCodeForToken(code, clientId, clientSecret, redirectUri) {
       'Accept': 'application/json',
       'User-Agent': 'GitHub-Projects-Mobile-App/1.0',
     },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code: code,
-      redirect_uri: redirectUri,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -385,7 +392,7 @@ export default {
             errorResponse('不正なリクエストボディです', 400)
           );
         }
-        const { code, state } = body;
+        const { code, state, code_verifier } = body;
         
         // バリデーション
         if (!code) {
@@ -406,14 +413,9 @@ export default {
             code,
             clientId,
             clientSecret,
-            redirectUri
+            redirectUri,
+            code_verifier // PKCE code_verifier を渡す
           );
-          
-          // ログにはマスクしたデータを出力
-          console.log('✅ Token exchange successful:', maskSensitiveData({
-            token_type: tokenData.token_type,
-            scope: tokenData.scope,
-          }));
           
           const response = new Response(
             JSON.stringify({
@@ -428,9 +430,12 @@ export default {
           return addCorsHeaders(response);
         } catch (error) {
           console.error('❌ Token exchange error:', error.message);
-          // 機密情報を含むエラーメッセージはマスク
+          console.error('❌ Error stack:', error.stack);
+          
+          // エラーメッセージを返す（機密情報は含まれない）
+          const errorMessage = error.message || 'Token 交換に失敗しました';
           return addCorsHeaders(
-            errorResponse('Token 交換に失敗しました', 400)
+            errorResponse(errorMessage, 400)
           );
         }
       }

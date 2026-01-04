@@ -61,11 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (initialLink != null) {
         _handleCallback(initialLink);
       }
-    } catch (e, stack) {
+    } catch (e) {
       // 予期しないエラーをログに記録
       // getInitialLink() は通常 null を返すが、プラットフォーム/パースエラーが発生する可能性がある
-      debugPrint('getInitialLink failed: $e');
-      debugPrint('Stack trace: $stack');
     }
   }
 
