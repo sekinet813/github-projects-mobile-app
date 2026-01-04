@@ -2,6 +2,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:envied/envied.dart';
+
+part 'app_config.g.dart';
+
+/// 環境変数を管理するクラス（enviedパッケージを使用）
+@Envied(path: '.env')
+abstract class Env {
+  @EnviedField(varName: 'GITHUB_OAUTH_CLIENT_ID', optional: true)
+  static const String? githubOAuthClientId = _Env.githubOAuthClientId;
+}
 
 /// アプリケーション全体の設定を管理するクラス
 class AppConfig {
@@ -150,6 +160,22 @@ class AppConfig {
     await _storage.delete(key: 'github_oauth_state');
   }
 
+  /// PKCE code verifier を保存
+  static Future<void> savePKCECodeVerifier(String codeVerifier) async {
+    await _storage.write(
+        key: 'github_oauth_pkce_code_verifier', value: codeVerifier);
+  }
+
+  /// PKCE code verifier を取得
+  static Future<String?> getPKCECodeVerifier() async {
+    return await _storage.read(key: 'github_oauth_pkce_code_verifier');
+  }
+
+  /// PKCE code verifier を削除
+  static Future<void> deletePKCECodeVerifier() async {
+    await _storage.delete(key: 'github_oauth_pkce_code_verifier');
+  }
+
   /// OAuth access token を保存
   static Future<void> saveOAuthAccessToken(String token) async {
     await _storage.write(key: 'github_oauth_access_token', value: token);
@@ -171,9 +197,32 @@ class AppConfig {
     await deleteOAuthAccessToken();
     // OAuth state を削除
     await deleteOAuthState();
+    // PKCE code verifier を削除
+    await deletePKCECodeVerifier();
     // Installation Access Token を削除（後方互換性）
     await deleteAccessToken();
     // Installation ID を削除（後方互換性）
     await deleteInstallationId();
+  }
+
+  // ===== OAuth App Client ID/Secret =====
+
+  /// GitHub OAuth Client ID を取得
+  /// 優先順位: envied（.envファイル） > 環境変数 > null
+  static String? get githubOAuthClientId {
+    // enviedから読み込み（.envファイル）
+    final enviedClientId = Env.githubOAuthClientId;
+    if (enviedClientId != null && enviedClientId.isNotEmpty) {
+      return enviedClientId;
+    }
+
+    // 環境変数から読み込み
+    final envClientId = Platform.environment['GITHUB_OAUTH_CLIENT_ID'];
+    if (envClientId != null && envClientId.isNotEmpty) {
+      return envClientId;
+    }
+
+    // デフォルト値なし（nullを返す）
+    return null;
   }
 }

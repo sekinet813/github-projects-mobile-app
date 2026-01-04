@@ -263,7 +263,7 @@ app.post('/oauth/exchange', async (req, res) => {
       });
     }
     
-    const { code, state } = req.body;
+    const { code, state, code_verifier } = req.body;
     
     // バリデーション
     if (!code) {
@@ -274,15 +274,22 @@ app.post('/oauth/exchange', async (req, res) => {
     
     // state パラメータの検証は Flutter 側で実施
     
-    // GitHub OAuth API でトークン交換
+    // GitHub OAuth API でトークン交換（PKCE対応）
+    const tokenRequest = {
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: code,
+      redirect_uri: redirectUri,
+    };
+    
+    // PKCE code_verifier が提供されている場合は追加
+    if (code_verifier) {
+      tokenRequest.code_verifier = code_verifier;
+    }
+    
     const tokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
-      {
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code,
-        redirect_uri: redirectUri,
-      },
+      tokenRequest,
       {
         headers: {
           'Content-Type': 'application/json',

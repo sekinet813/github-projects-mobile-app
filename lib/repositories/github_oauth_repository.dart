@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
@@ -52,17 +53,76 @@ class GitHubOAuthRepository {
     await AppConfig.deleteOAuthState();
   }
 
-  /// 認可 URL を生成
+  /// PKCE code verifier を生成
+  /// RFC 7636 に準拠: 43-128文字のランダムな文字列
+  /// 確実に43文字以上になるように、33バイト（264ビット）を生成
+  /// 33バイトをbase64urlエンコードすると、確実に44文字になる
+  String _generateCodeVerifier() {
+    final random = Random.secure();
+    // 33バイト（264ビット）を生成
+    // base64urlエンコードすると、確実に44文字以上になる
+    // 33 * 8 = 264ビット、264 / 6 = 44文字
+    final bytes = List<int>.generate(33, (_) => random.nextInt(256));
+    final encoded = base64UrlEncode(bytes);
+
+    // RFC 7636の要件を満たしているか確認
+    if (encoded.length < 43 || encoded.length > 128) {
+      throw Exception(
+          'code_verifier length must be between 43 and 128, but got ${encoded.length}');
+    }
+
+    return encoded;
+  }
+
+  /// PKCE code challenge を生成
+  /// code_verifier の SHA256 ハッシュを base64url エンコード（パディングなし）
+  /// RFC 7636に準拠: 43文字の長さ（S256メソッド）
+  String _generateCodeChallenge(String codeVerifier) {
+    final bytes = utf8.encode(codeVerifier);
+    final digest = sha256.convert(bytes);
+    // base64urlエンコード（パディング=を削除）
+    // SHA256は32バイトなので、base64urlエンコードすると43文字になる
+    final base64String = base64.encode(digest.bytes);
+    // base64url形式に変換（+ → -, / → _, = を削除）
+    return base64String
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replaceAll('=', '');
+  }
+
+  /// PKCE code verifier を SecureStorage に保存
+  Future<void> _saveCodeVerifier(String codeVerifier) async {
+    await AppConfig.savePKCECodeVerifier(codeVerifier);
+  }
+
+  /// PKCE code verifier を SecureStorage から取得
+  Future<String?> _getCodeVerifier() async {
+    return await AppConfig.getPKCECodeVerifier();
+  }
+
+  /// PKCE code verifier を削除
+  Future<void> _deleteCodeVerifier() async {
+    await AppConfig.deletePKCECodeVerifier();
+  }
+
+  /// 認可 URL を生成（PKCE対応）
   Future<Uri> generateAuthUrl() async {
     final clientId = await _getClientId();
     final state = _generateState();
     await _saveState(state);
+
+    // PKCE code verifier と challenge を生成
+    final codeVerifier = _generateCodeVerifier();
+    final codeChallenge = _generateCodeChallenge(codeVerifier);
+    await _saveCodeVerifier(codeVerifier);
 
     return Uri.https('github.com', '/login/oauth/authorize', {
       'client_id': clientId,
       'redirect_uri': _redirectUri,
       'scope': _oauthScope,
       'state': state,
+      'code_challenge': codeChallenge,
+      'code_challenge_method': 'S256',
     });
   }
 
@@ -125,8 +185,23 @@ class GitHubOAuthRepository {
     // state を削除（一度使用したら無効化）
     await _deleteState();
 
+    // PKCE code verifier を取得
+    final codeVerifier = await _getCodeVerifier();
+    if (codeVerifier == null || codeVerifier.isEmpty) {
+      throw Exception('PKCE code verifier が取得できませんでした');
+    }
+
+    // RFC 7636の要件を満たしているか確認
+    if (codeVerifier.length < 43 || codeVerifier.length > 128) {
+      throw Exception(
+          'PKCE code verifier の長さが無効です: ${codeVerifier.length} (43-128文字である必要があります)');
+    }
+
     // Token 交換
-    final accessToken = await _exchangeCodeForToken(code, state);
+    final accessToken = await _exchangeCodeForToken(code, state, codeVerifier);
+
+    // PKCE code verifier を削除（一度使用したら無効化）
+    await _deleteCodeVerifier();
 
     // Token を保存
     await saveAccessToken(accessToken);
@@ -134,8 +209,9 @@ class GitHubOAuthRepository {
     return accessToken;
   }
 
-  /// Authorization code を access token に交換
-  Future<String> _exchangeCodeForToken(String code, String state) async {
+  /// Authorization code を access token に交換（PKCE対応）
+  Future<String> _exchangeCodeForToken(
+      String code, String state, String codeVerifier) async {
     try {
       final response = await http.post(
         Uri.parse('${AppConfig.backendBaseUrl}/oauth/exchange'),
@@ -143,6 +219,7 @@ class GitHubOAuthRepository {
         body: jsonEncode({
           'code': code,
           'state': state,
+          'code_verifier': codeVerifier,
         }),
       );
 
@@ -206,5 +283,6 @@ class GitHubOAuthRepository {
   Future<void> logout() async {
     await deleteAccessToken();
     await AppConfig.deleteOAuthState();
+    await AppConfig.deletePKCECodeVerifier();
   }
 }
